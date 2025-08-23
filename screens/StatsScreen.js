@@ -1,19 +1,22 @@
-import {StyleSheet, Text, View, SafeAreaView, Pressable} from 'react-native';
-import React, {useState, useEffect} from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native'
+import React, { useEffect, useState } from 'react'
 import moment from 'moment';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialDesignIcons from '@react-native-vector-icons/material-design-icons';
-import {TabBar, TabView} from 'react-native-tab-view';
+import { TabBar, TabView } from 'react-native-tab-view';
 import axios from 'axios';
-import PieChart from 'react-native-pie-chart';
 import { getBaseURL, API_ENDPOINTS } from '../config/api';
+import PieChart from 'react-native-pie-chart';
 
-const StatsScreen = () => {
-  const [currentDate, setCurrentDate] = useState(moment());
+
+const StatsScreen = () => { 
+    const [currentDate, setCurrentDate] = useState(moment());
   const [index, setIndex] = useState(0);
-  const [option, setOption] = useState('Stats');
+  const [option, setOption] = useState('Budget');
   const [expenses, setExpenses] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
   const date = currentDate.format('MMMM YYYY');
+  const [isLoading, setIsLoading] = useState(false);
+  
 
   const handlePrevMonth = () => {
     setCurrentDate(prevDate => moment(prevDate).subtract(1, 'month'));
@@ -23,43 +26,62 @@ const StatsScreen = () => {
     setCurrentDate(prevDate => moment(prevDate).add(1, 'month'));
   };
 
-  useEffect(() => {
-    fetchExpenses();
-  }, [currentDate]);
-
-  // Add refresh capability
-  const handleRefresh = () => {
-    fetchExpenses();
-  };
-
-  const fetchExpenses = async () => {
-    try {
-      setIsLoading(true);
-      console.log("Fetching expenses for stats, date:", date);
-      
-      const response = await axios.get(`${getBaseURL()}${API_ENDPOINTS.expenses}`, {
-        params: {date},
-      });
-      
-      if (response.data.success) {
-        setExpenses(response.data.data || []);
-        console.log(`✅ Loaded ${response.data.data?.length || 0} expenses for stats`);
-      } else {
-        console.log("❌ API returned error:", response.data.message);
-        setExpenses([]);
-      }
-    } catch (error) {
-      console.log('❌ Error fetching expenses for stats:', error);
-      if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error') {
-        console.log('Network Error: Make sure your backend server is running');
-      }
+   useEffect(()=>{
+  fetchExpenses();
+ },[currentDate]);
+ const fetchExpenses=async()=>{
+  try {
+    setIsLoading(true);
+    console.log("Fetching expenses for date:", date);
+    
+    const response = await axios.get(`${getBaseURL()}${API_ENDPOINTS.expenses}`, {
+      params: { date } 
+    });
+    console.log(response)
+    
+    if (response.data.success) {
+      setExpenses(response.data.data || []);
+      ;
+      console.log(` Loaded ${response.data.count} expenses`);
+    } else {
+      console.log(" API returned error:", response.data.message);
       setExpenses([]);
-    } finally {
-      setIsLoading(false);
     }
-  };
+    console.log("expense in stats",expenses)
+  } catch (error) {
+    console.log("Error fetching expenses:", error);
+    if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error') {
+      console.log('Network Error: Make sure your backend server is running');
+    }
+    setExpenses([]);
+  } finally {
+    setIsLoading(false);
+  }
+ }
 
-  const totalExpense = expenses
+
+
+  const [routes,setRoute]= useState([
+    {
+      key:"edit",
+      title:"Income",
+    },
+    {
+      key:"view",
+      title:"Expense"
+    }
+  ])
+  const renderScene= ({route})=>{
+    console.log(route)
+    switch(route.key){
+      case "edit":
+        return <Income/>
+      case "view":
+        return <Expense/>
+    }
+  }
+
+    const totalExpense = expenses
     .filter(expense => expense.type == 'Expense')
     .reduce((total, expense) => total + parseFloat(expense.amount), 0);
 
@@ -67,42 +89,10 @@ const StatsScreen = () => {
     .filter(expense => expense.type == 'Income')
     .reduce((total, expense) => total + parseFloat(expense.amount), 0);
 
-  const [routes, setRoutes] = useState([
-    {key: 'edit', title: `Income`},
-    {key: 'view', title: 'Expense'},
-  ]);
-
-  const renderScene = ({route}) => {
-    switch (route.key) {
-      case 'edit':
-        return <Income />;
-      case 'view':
-        return <Expense />;
-    }
-  };
-
-  const RenderPieChart = () => {
-    if (isLoading) {
-      return (
-        <View style={{padding: 40, alignItems: 'center'}}>
-          <Text style={{fontSize: 16, color: '#666', textAlign: 'center'}}>
-            Loading income data...
-          </Text>
-        </View>
-      );
-    }
-
-    const incomeExpenses = expenses.filter(expense => expense.type === 'Income');
-    
-    if (incomeExpenses.length === 0) {
-      return (
-        <View style={{padding: 40, alignItems: 'center'}}>
-          <Text style={{fontSize: 16, color: '#666', textAlign: 'center'}}>
-            No income data found for {date}
-          </Text>
-        </View>
-      );
-    }
+const RenderPieChart = () => {
+     const data = [
+      50, 10, 40, 95, -4, -24, 85, 91, 35, 53, -53, 24, 50, -20, -80,
+    ];
 
     const randomColor = () =>
       ('#' + ((Math.random() * 0xffffff) << 0).toString(16) + '000000').slice(
@@ -110,23 +100,32 @@ const StatsScreen = () => {
         7,
       );
 
-    const pieData = incomeExpenses.map((expense, index) => ({
-      value: parseFloat(expense.amount),
-      svg: {
-        fill: randomColor(),
-        onPress: () => console.log('press', index),
-      },
-      key: `pie-${index}`,
-      category: expense.category,
-      price: expense.amount,
-    }));
+        const pieData = expenses
+      .filter(expense => expense.type === 'Income') 
+      .map((expense, index) => ({
+        value: parseFloat(expense.amount), 
+        color:randomColor(),
+        key: `pie-${index}`,
+       
+       
+        category: expense.category,
+        price: expense.amount,
+        
+      }));
+      console.log("Pie data",pieData) 
 
-    return (
-      <View>
-        <PieChart style={{height: 200}} data={pieData} />
-        {pieData.map((data, index) => (
+
+             return (
+         <View>
+          <View style={{alignItems: 'center', marginVertical: 20}}>
+            <PieChart widthAndHeight={200} series={pieData} cover={{ radius: 0.45, color: '#e6f7e3' }} padAngle ={0.045 }/>
+          </View>
+         
+          
+           {pieData.map((data, index) => (
+            
           <View
-            key={data.key}
+            key={index}
             style={{
               padding: 12,
             }}>
@@ -140,7 +139,7 @@ const StatsScreen = () => {
                 style={{flexDirection: 'row', alignItems: 'center', gap: 7}}>
                 <View
                   style={{
-                    backgroundColor: data?.svg?.fill,
+                    backgroundColor: data?.color,
                     alignSelf: 'flex-start',
                     paddingVertical: 4,
                     paddingHorizontal: 8,
@@ -154,7 +153,7 @@ const StatsScreen = () => {
                       color: 'white',
                       fontWeight: '500',
                     }}>
-                    {totalIncome > 0 ? Math.round((data.value / totalIncome) * 100) : 0}%
+                    {Math.round((data.value / totalIncome) * 100)}%
                   </Text>
                 </View>
                 <Text style={{fontSize: 15, textAlign: 'center'}}>
@@ -162,37 +161,19 @@ const StatsScreen = () => {
                 </Text>
               </View>
               <View>
-                <Text>₹{Number(data?.price).toFixed(2)}</Text>
+                <Text>{Number(data?.price).toFixed(2)}</Text>
               </View>
             </View>
           </View>
         ))}
-      </View>
-    );
+        </View>
+      )
   };
 
-  const RenderPieChartExpense = () => {
-    if (isLoading) {
-      return (
-        <View style={{padding: 40, alignItems: 'center'}}>
-          <Text style={{fontSize: 16, color: '#666', textAlign: 'center'}}>
-            Loading expense data...
-          </Text>
-        </View>
-      );
-    }
-
-    const expenseItems = expenses.filter(expense => expense.type === 'Expense');
-    
-    if (expenseItems.length === 0) {
-      return (
-        <View style={{padding: 40, alignItems: 'center'}}>
-          <Text style={{fontSize: 16, color: '#666', textAlign: 'center'}}>
-            No expense data found for {date}
-          </Text>
-        </View>
-      );
-    }
+  const RenderPieChartExpense=()=>{
+     const data = [
+      50, 10, 40, 95, -4, -24, 85, 91, 35, 53, -53, 24, 50, -20, -80,
+    ];
 
     const randomColor = () =>
       ('#' + ((Math.random() * 0xffffff) << 0).toString(16) + '000000').slice(
@@ -200,23 +181,35 @@ const StatsScreen = () => {
         7,
       );
 
-    const pieData = expenseItems.map((expense, index) => ({
-      value: parseFloat(expense.amount),
-      svg: {
-        fill: randomColor(),
-        onPress: () => console.log('press', index),
-      },
-      key: `pie-${index}`,
-      category: expense.category,
-      price: expense.amount,
-    }));
+        const pieData = expenses
+      .filter(expense => expense.type === 'Expense') 
+      .map((expense, index) => ({
+        value: parseFloat(expense.amount), 
+        color:randomColor(),
+        key: `pie-${index}`,
+       
+       
+        category: expense.category,
+        price: expense.amount,
+        
+      }));
+      console.log("Pie data",pieData) 
 
-    return (
-      <View style={{marginTop: 20}}>
-        <PieChart style={{height: 200}} data={pieData} />
 
-        {pieData?.map((data, index) => (
-          <View key={data.key} style={{padding: 12}}>
+             return (
+         <View>
+          <View style={{alignItems: 'center', marginVertical: 20}}>
+            <PieChart widthAndHeight={200} series={pieData} cover={{ radius: 0.45, color: '#e6f7e3' }} padAngle ={0.045 }/>
+          </View>
+         
+          
+           {pieData.map((data, index) => (
+            
+          <View
+            key={index}
+            style={{
+              padding: 12,
+            }}>
             <View
               style={{
                 flexDirection: 'row',
@@ -227,11 +220,11 @@ const StatsScreen = () => {
                 style={{flexDirection: 'row', alignItems: 'center', gap: 7}}>
                 <View
                   style={{
-                    backgroundColor: data?.svg?.fill,
+                    backgroundColor: data?.color,
                     alignSelf: 'flex-start',
                     paddingVertical: 4,
                     paddingHorizontal: 8,
-                    width: 50,
+                    width: 70,
                     borderRadius: 5,
                   }}>
                   <Text
@@ -241,26 +234,28 @@ const StatsScreen = () => {
                       color: 'white',
                       fontWeight: '500',
                     }}>
-                    {totalExpense > 0 ? Math.round((data.value / totalExpense) * 100) : 0}%
+                    {Math.round((data.value / totalIncome) * 100)}%
                   </Text>
                 </View>
-
                 <Text style={{fontSize: 15, textAlign: 'center'}}>
                   {data?.category}
                 </Text>
               </View>
               <View>
-                <Text>₹{Number(data?.price).toFixed(2)}</Text>
+                <Text>{Number(data?.price).toFixed(2)}</Text>
               </View>
             </View>
           </View>
         ))}
-      </View>
-    );
-  };
+        </View>
+      )
 
-  const Income = () => (
-    <View style={{backgroundColor: 'white'}}>
+  }
+
+
+  const Income=()=>{
+    return(
+        <View style={{backgroundColor: 'white'}}>
       <View>
         {option == 'Budget' && (
           <View>
@@ -283,7 +278,7 @@ const StatsScreen = () => {
                     fontWeight: '500',
                     letterSpacing: 0.5,
                   }}>
-                  ₹{totalIncome > 0 ? (totalIncome - totalExpense).toFixed(2) : '0.00'}
+                  1000.00
                 </Text>
               </View>
 
@@ -298,38 +293,28 @@ const StatsScreen = () => {
               </View>
             </View>
 
-            {isLoading ? (
-              <View style={{padding: 20, alignItems: 'center'}}>
-                <Text style={{color: 'gray', fontSize: 14}}>Loading...</Text>
-              </View>
-            ) : expenses.length === 0 ? (
-              <View style={{padding: 20, alignItems: 'center'}}>
-                <Text style={{color: 'gray', fontSize: 14}}>No data found</Text>
-              </View>
-            ) : (
-              expenses
-                .filter(item => item.type === 'Income')
-                .map((item, index) => (
-                  <Pressable
-                    key={index}
+            {expenses
+              ?.filter(item => item.type === 'Income')
+              .map((item, index) => (
+                <Pressable
+                key={index+9}
+                  style={{
+                    backgroundColor: 'white',
+                    borderTopColor: '#E0E0E0',
+                    borderTopWidth: 0.6,
+                    padding: 14,
+                  }}>
+                  <View
                     style={{
-                      backgroundColor: 'white',
-                      borderTopColor: '#E0E0E0',
-                      borderTopWidth: 0.6,
-                      padding: 14,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
                     }}>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                      }}>
-                      <Text style={{fontWeight: '500'}}>{item?.category}</Text>
-                      <Text>₹{Number(item?.amount).toFixed(2)}</Text>
-                    </View>
-                  </Pressable>
-                ))
-            )}
+                    <Text style={{fontWeight: '500'}}>{item?.category}</Text>
+                    <Text>{Number(item?.amount).toFixed(2)}</Text>
+                  </View>
+                </Pressable>
+              ))}
           </View>
         )}
 
@@ -340,10 +325,12 @@ const StatsScreen = () => {
         )}
       </View>
     </View>
-  );
-
-  const Expense = () => (
-    <View style={{backgroundColor: 'white'}}>
+    )
+   
+  }
+  const Expense=()=>{
+    return(
+       <View style={{backgroundColor: 'white'}}>
       <View>
         {option == 'Budget' && (
           <View>
@@ -366,7 +353,7 @@ const StatsScreen = () => {
                     fontWeight: '500',
                     letterSpacing: 0.5,
                   }}>
-                  ₹{totalExpense > 0 ? (1000 - totalExpense).toFixed(2) : '1000.00'}
+                  1000.00
                 </Text>
               </View>
 
@@ -381,38 +368,28 @@ const StatsScreen = () => {
               </View>
             </View>
 
-            {isLoading ? (
-              <View style={{padding: 20, alignItems: 'center'}}>
-                <Text style={{color: 'gray', fontSize: 14}}>Loading...</Text>
-              </View>
-            ) : expenses.length === 0 ? (
-              <View style={{padding: 20, alignItems: 'center'}}>
-                <Text style={{color: 'gray', fontSize: 14}}>No data found</Text>
-              </View>
-            ) : (
-              expenses
-                .filter(item => item.type === 'Expense')
-                .map((item, index) => (
-                  <Pressable
-                    key={index}
+            {expenses
+              ?.filter(item => item.type === 'Expense')
+              .map((item, index) => (
+                <Pressable
+                key={index+4}
+                  style={{
+                    backgroundColor: 'white',
+                    borderTopColor: '#E0E0E0',
+                    borderTopWidth: 0.6,
+                    padding: 14,
+                  }}>
+                  <View
                     style={{
-                      backgroundColor: 'white',
-                      borderTopColor: '#E0E0E0',
-                      borderTopWidth: 0.6,
-                      padding: 14,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
                     }}>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                      }}>
-                      <Text style={{fontWeight: '500'}}>{item?.category}</Text>
-                      <Text>₹{Number(item?.amount).toFixed(2)}</Text>
-                    </View>
-                  </Pressable>
-                ))
-            )}
+                    <Text style={{fontWeight: '500'}}>{item?.category}</Text>
+                    <Text>{Number(item?.amount).toFixed(2)}</Text>
+                  </View>
+                </Pressable>
+              ))}
           </View>
         )}
 
@@ -423,8 +400,11 @@ const StatsScreen = () => {
         )}
       </View>
     </View>
-  );
+    )
+
+  }
   return (
+   
     <SafeAreaView style={{flex: 1}}>
       <View style={{padding: 12}}>
         <View
@@ -515,23 +495,6 @@ const StatsScreen = () => {
                 color="black"
               />
             </View>
-            
-            {/* Refresh button */}
-            <View style={{paddingHorizontal: 10, paddingTop: 10}}>
-              <Pressable
-                onPress={handleRefresh}
-                style={{
-                  backgroundColor: '#0578eb',
-                  padding: 8,
-                  borderRadius: 6,
-                  alignSelf: 'flex-end'
-                }}
-              >
-                <Text style={{color: 'white', fontSize: 12, fontWeight: '500'}}>
-                  Refresh
-                </Text>
-              </Pressable>
-            </View>
           </View>
         )}
       </View>
@@ -553,9 +516,9 @@ const StatsScreen = () => {
         )}
       />
     </SafeAreaView>
-  );
-};
+  )
+}
 
-export default StatsScreen;
+export default StatsScreen
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({})
