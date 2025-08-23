@@ -13,7 +13,7 @@ export const API_CONFIG = {
     baseURL: 'http://192.168.1.100:8000', // Replace with your actual IP
   },
 };
- 
+
 // Get the appropriate base URL based on platform
 export const getBaseURL = () => {
   // You can add logic here to detect platform or use environment variables
@@ -21,6 +21,7 @@ export const getBaseURL = () => {
   return API_CONFIG.android.baseURL;
 };
 
+// API endpoints
 export const API_ENDPOINTS = {
   expenses: '/expenses',
   // Add more endpoints as needed

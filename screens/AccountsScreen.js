@@ -1,5 +1,6 @@
-import {StyleSheet, Text, View, SafeAreaView, ActivityIndicator} from 'react-native';
+import {StyleSheet, Text, View, ActivityIndicator} from 'react-native';
 import React, {useState, useEffect} from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 import { getBaseURL, API_ENDPOINTS } from '../config/api';
 

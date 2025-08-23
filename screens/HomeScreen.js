@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Button, Dimensions, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import React, { useCallback, useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@react-native-vector-icons/ionicons';
@@ -7,14 +7,29 @@ import MaterialDesignIcons from '@react-native-vector-icons/material-design-icon
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import { getBaseURL, API_ENDPOINTS } from '../config/api';
+import Modal from 'react-native-modal';
+
 
 const HomeScreen = () => {
+  console.log("base url is ",getBaseURL())
   const [option, setOption] = useState('Daily');  
   const navigation= useNavigation();
   const [currentDate, setCurrentDate] = useState(moment());
   const [expenses,setExpenses]=useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const date= currentDate.format("MMMM YYYY")
+  const date= currentDate.format("MMMM YYYY");
+   const [modalVisible, setModalVisible] = useState(false);
+  const [currentData, setCurrentData] = useState(null);
+
+  const day = moment(currentData?.item?.date).format('DD'); //10
+  const monthYear = moment(currentData?.item?.date).format('MM YYYY');
+  const dayName = moment(currentData?.item?.date).format('ddd');
+
+  const setOpenModal = (item, dayExpenses, totalIncome, totalExpense) => {
+    setCurrentData({item, dayExpenses, totalIncome, totalExpense});
+
+    setModalVisible(!modalVisible);
+  };
 
  useEffect(()=>{
   fetchExpenses();
@@ -82,6 +97,31 @@ const HomeScreen = () => {
       fetchExpenses();
     },[navigation])
   )
+    const screenWidth = Dimensions.get('window').width;
+  const boxWidth = screenWidth / 7 - 8;
+
+ const [selectedMonth, setSelectedMonth] = useState(moment());
+
+  const generateDaysForMonth = month => {
+    const startOfMonth = month.clone().startOf('month');
+    const endOfMonth = month.clone().endOf('month');
+
+    const startDate = startOfMonth.clone().startOf('week');
+    const endDate = endOfMonth.clone().endOf('week')
+
+    const days = [];
+    let date = startDate.clone();
+
+    while (date.isBefore(endDate, 'day')) {
+      days.push({
+        date: date.clone(),
+        isCurrentMonth: date.month() === selectedMonth.month(),
+      });
+      date.add(1, 'day');
+    }
+
+    return days;
+  };
 
 
 
@@ -177,7 +217,7 @@ const HomeScreen = () => {
     );
   };
 
-
+const days=generateDaysForMonth(currentDate);
 
 
   return (
@@ -441,7 +481,8 @@ const HomeScreen = () => {
                 }}>
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(
                   (day, index) => (
-                    <Text
+                    <Text 
+                    key={index+1}
                       style={[
                         {
                           fontSize: 13,
@@ -569,6 +610,167 @@ const HomeScreen = () => {
           <Ionicons name="add-outline" size={32} color={'white'} />
         </Pressable>
       </View>
+             <Modal 
+         isVisible={modalVisible}
+         onBackdropPress={() => setModalVisible(false)}
+         onBackButtonPress={() => setModalVisible(false)}
+         swipeDirection="down"
+         onSwipeComplete={() => setModalVisible(false)}
+         swipeThreshold={200}
+         animationIn="slideInUp"
+         animationOut="slideOutDown"
+         animationInTiming={300}
+         animationOutTiming={300}
+         style={{ margin: 0, justifyContent: 'flex-end' }}
+       >
+                 <View style={{ 
+           width: '100%', 
+           height: 500,
+           backgroundColor: 'white',
+           borderTopLeftRadius: 20,
+           borderTopRightRadius: 20,
+           paddingHorizontal: 20,
+           paddingTop: 20,
+           paddingBottom: 30
+         }}>
+          <ScrollView 
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 20 }}
+            style={{ flex: 1 }}
+          >
+           <View>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 25
+              }}>
+              <View
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={{ fontSize: 22, fontWeight: 'bold' }}>{day}</Text>
+                <View>
+                  <Text style={{ color: 'gray', fontSize: 9 }}>{monthYear}</Text>
+                  <Text
+                    style={{
+                      backgroundColor: '#404040',
+                      borderRadius: 4,
+                      paddingHorizontal: 4,
+                      paddingVertical: 1,
+                      color: 'white',
+                      fontSize: 10,
+                      alignSelf: 'flex-start',
+                      marginTop: 3,
+                    }}>
+                    {dayName}
+                  </Text>
+                </View>
+              </View>
+              <View
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
+                <Text
+                  style={{ color: '#0578eb', fontSize: 15, fontWeight: '500' }}>
+                  ₹ {currentData?.totalIncome?.toFixed(2) || '0.00'}
+                </Text>
+                <Text
+                  style={{ fontSize: 15, color: '#eb6105', fontWeight: '500' }}>
+                  ₹ {currentData?.totalExpense?.toFixed(2) || '0.00'}
+                </Text>
+              </View>
+            </View>
+
+            {currentData?.dayExpenses?.length > 0 ? (
+              <View>
+                {currentData?.dayExpenses?.map((item, index) => (
+                  <View key={index} style={{ 
+                    marginTop: 20,
+                    paddingVertical: 15,
+                    paddingHorizontal: 15,
+                    backgroundColor: '#f8f9fa',
+                    borderRadius: 10,
+                    marginHorizontal: 5
+                  }}>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 20,
+                      }}>
+                      <Text style={{ 
+                        fontSize: 13, 
+                        color: 'gray', 
+                        minWidth: 70,
+                        fontWeight: '500'
+                      }}>
+                        {item?.category}
+                      </Text>
+
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 14, color: 'gray' }}>
+                          {item?.account}
+                        </Text>
+
+                        {item?.note && (
+                          <Text
+                            style={{ fontSize: 14, color: 'gray', marginTop: 3 }}>
+                            {item?.note}
+                          </Text>
+                        )}
+                      </View>
+
+                      <Text
+                        style={{
+                          color:
+                            item?.type == 'Expense' ? '#eb6105' : '#0578eb',
+                          fontWeight: '600',
+                          fontSize: 15
+                        }}>
+                        ₹{Number(item?.amount).toFixed(2)}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+                         ) : (
+               <View
+                 style={{
+                   justifyContent: 'center',
+                   alignItems: 'center',
+                   marginTop: 80,
+                 }}>
+                 <Ionicons 
+                   name="document-outline" 
+                   size={60} 
+                   color="#E0E0E0" 
+                 />
+                 <Text
+                   style={{ 
+                     textAlign: 'center', 
+                     color: 'gray', 
+                     marginTop: 15,
+                     fontSize: 16,
+                     fontWeight: '500'
+                   }}>
+                   No Data available
+                 </Text>
+                 <Text
+                   style={{ 
+                     textAlign: 'center', 
+                     color: '#B0B0B0', 
+                     marginTop: 8,
+                     fontSize: 14
+                   }}>
+                   No expenses recorded for this day
+                 </Text>
+               </View>
+             )}
+          </View>
+          </ScrollView>
+        </View>
+      </Modal>
+
+     
+
     </>
   );
 };

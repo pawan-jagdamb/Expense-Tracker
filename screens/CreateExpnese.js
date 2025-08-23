@@ -2,13 +2,14 @@ import {
   StyleSheet,
   Text,
   View,
-  SafeAreaView,
+  
   ScrollView,
   Pressable,
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, {useState} from 'react';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import moment from 'moment';

@@ -118,7 +118,7 @@ app.get('/expenses', async (req, res) => {
   } catch (error) {
     console.error('❌ Error getting expenses:', error);
     return res.status(500).json({
-      success: false,
+      success: false, 
       message: 'Error getting expenses'
     });
   }
