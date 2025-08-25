@@ -15,9 +15,9 @@ app.use(cors({
 }));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
-
+const mongoDBurl="";
 // Database connection
-mongoose.connect("mongodb+srv://pawankumar9534078:ExpenseTracker@cluster0.fbu6mr0.mongodb.net/", {
+mongoose.connect(mongoDBurl, {
   useNewUrlParser: true,
   
 })
